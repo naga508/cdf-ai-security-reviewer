@@ -1,0 +1,6 @@
+# The source loader uses only the Python standard library.
+# These dependencies support the next (Gemini) implementation phase and tests.
+google-genai>=1.0,<2.0
+pydantic>=2.0,<3.0
+python-dotenv>=1.0,<2.0
+pytest>=8.0,<10.0

@@ -1,0 +1,24 @@
+# Python and test caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+# Secrets and local configs
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*credentials*.json
+# Generated reports and local samples
+reports/*
+!reports/.gitkeep
+sample_input/
+organizer-materials/
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
