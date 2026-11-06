@@ -23,6 +23,7 @@ def main() -> None:
     scan.add_argument("--output", default="reports/security-review", help="Output directory")
     scan.add_argument("--model", help="Gemini model ID, overriding GEMINI_MODEL")
     scan.add_argument("--max-batches", type=int, default=10, help="Maximum code batches to analyze")
+    scan.add_argument("--no-deep-review", action="store_true", help="Skip the second authorization/RLS review to reduce API usage")
 
     commands.add_parser("models", help="List models accessible to your Gemini API key")
     args = parser.parse_args()
@@ -68,21 +69,25 @@ def main() -> None:
             return
 
         from .gemini_analyzer import save_report, scan_with_gemini
-        model_name = args.model or os.getenv("GEMINI_MODEL") or "gemini-3.8-flash"
+        model_name = args.model or os.getenv("GEMINI_MODEL") or "gemini-3.5-flash"
         loaded = load_source(args.path)
         print(f"Loaded {len(loaded.files)} source files; sending permitted source to Gemini ({model_name}).")
-        result = scan_with_gemini(loaded, client, model_name, max_batches=args.max_batches)
+        result = scan_with_gemini(
+            loaded, client, model_name, max_batches=args.max_batches,
+            deep_review=not args.no_deep_review,
+        )
         json_path, md_path = save_report(result, args.output)
         print(f"Findings requiring review: {len(result.findings)}")
         print(f"Gemini API calls completed: {result.api_calls}")
+        print(f"Review passes completed: {result.review_passes_completed}")
         print(f"Source coverage: {'complete within loader limits' if result.complete_coverage else 'partial / indeterminate'}")
         print(f"JSON report: {json_path}")
         print(f"Markdown report: {md_path}")
         if result.warnings:
             for item in result.warnings:
                 print(f"WARNING: {item}")
-            if result.api_calls == 0:
-                raise SystemExit(1)
+        if not result.complete_coverage:
+            raise SystemExit(2)  # Keep the report, but signal incomplete analysis to scripts.
     finally:
         client.close()
 
